@@ -1,0 +1,7 @@
+package com.laba.solvd.exception;
+
+public class NegativeBalanceException extends RuntimeException {
+    public NegativeBalanceException(String message) {
+        super(message);
+    }
+}
