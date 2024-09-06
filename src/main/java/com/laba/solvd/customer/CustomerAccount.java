@@ -6,17 +6,20 @@ import com.laba.solvd.account.LoanAccount;
 import com.laba.solvd.account.SavingsAccount;
 import com.laba.solvd.transaction.Transaction;
 import com.laba.solvd.transaction.TransactionProcessable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.LocalDate;
 import java.util.*;
 
 public class CustomerAccount implements TransactionProcessable {
+    private static final Logger logger = LogManager.getLogger(CustomerAccount.class);
+
     private LoanAccount loanAccount;
     private SavingsAccount savingsAccount;
     private CurrentAccount currentAccount;
-    private Map<LocalDate, List<Transaction>> transactionsByDate; //Transactions are assigned appropriate dates.
+    private Map<LocalDate, List<Transaction>> transactionsByDate; // Transactions are assigned appropriate dates.
     private static int numberOfAccounts;
-
 
     public CustomerAccount(Account account, ArrayList<Transaction> transactions) {
         this.transactionsByDate = new HashMap<>();
@@ -29,9 +32,12 @@ public class CustomerAccount implements TransactionProcessable {
         } else if (account instanceof CurrentAccount) {
             this.currentAccount = (CurrentAccount) account;
         }
+
         for (Transaction transaction : transactions) {
             addTransaction(transaction.getAmount(), transaction.getDescription(), transaction.getTransactionDate());
         }
+
+        logger.info("Created CustomerAccount with account: {}", account);
     }
 
     public LoanAccount getLoanAccount() {
@@ -40,6 +46,7 @@ public class CustomerAccount implements TransactionProcessable {
 
     public void setLoanAccount(LoanAccount loanAccount) {
         this.loanAccount = loanAccount;
+        logger.debug("Set LoanAccount: {}", loanAccount);
     }
 
     public SavingsAccount getSavingsAccount() {
@@ -48,6 +55,7 @@ public class CustomerAccount implements TransactionProcessable {
 
     public void setSavingsAccount(SavingsAccount savingsAccount) {
         this.savingsAccount = savingsAccount;
+        logger.debug("Set SavingsAccount: {}", savingsAccount);
     }
 
     public CurrentAccount getCurrentAccount() {
@@ -56,6 +64,7 @@ public class CustomerAccount implements TransactionProcessable {
 
     public void setCurrentAccount(CurrentAccount currentAccount) {
         this.currentAccount = currentAccount;
+        logger.debug("Set CurrentAccount: {}", currentAccount);
     }
 
     public static int getNumberOfAccounts() {
@@ -64,6 +73,7 @@ public class CustomerAccount implements TransactionProcessable {
 
     public static void setNumberOfAccounts(int numberOfAccounts) {
         CustomerAccount.numberOfAccounts = numberOfAccounts;
+        logger.debug("Set numberOfAccounts: {}", numberOfAccounts);
     }
 
     public Map<LocalDate, List<Transaction>> getTransactionsByDate() {
@@ -72,36 +82,39 @@ public class CustomerAccount implements TransactionProcessable {
 
     public void setTransactionsByDate(Map<LocalDate, List<Transaction>> transactionsByDate) {
         this.transactionsByDate = transactionsByDate;
+        logger.debug("Set transactionsByDate: {}", transactionsByDate);
     }
-
 
     @Override
     public void addTransaction(double amount, String description, LocalDate date) {
+        logger.debug("Adding transaction: amount={}, description={}, date={}", amount, description, date);
         Transaction newTransaction = new Transaction(amount, description, date);
-
-
         transactionsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(newTransaction);
-
 
         if (currentAccount != null) {
             if (amount >= 0) {
                 currentAccount.deposit(amount, description);
+                logger.debug("Deposited {} to CurrentAccount", amount);
             } else {
                 currentAccount.withdraw(-amount, description);
+                logger.debug("Withdrew {} from CurrentAccount", -amount);
             }
         }
         if (savingsAccount != null) {
             if (amount >= 0) {
                 savingsAccount.deposit(amount, description);
+                logger.debug("Deposited {} to SavingsAccount", amount);
             } else {
                 savingsAccount.withdraw(-amount, description);
+                logger.debug("Withdrew {} from SavingsAccount", -amount);
             }
         }
         if (loanAccount != null) {
             if (amount >= 0) {
                 loanAccount.deposit(amount, description);
+                logger.debug("Deposited {} to LoanAccount", amount);
             } else {
-                System.out.println("Withdrawals are not supported for loan accounts.");
+                logger.warn("Withdrawals are not supported for LoanAccount");
             }
         }
     }
@@ -110,9 +123,11 @@ public class CustomerAccount implements TransactionProcessable {
     public double getTransactionAmount(LocalDate date) {
         List<Transaction> transactionsOnDate = transactionsByDate.get(date);
         if (transactionsOnDate != null) {
-            return transactionsOnDate.stream()
+            double totalAmount = transactionsOnDate.stream()
                     .mapToDouble(Transaction::getAmount)
                     .sum();
+            logger.debug("Total transaction amount for date {}: {}", date, totalAmount);
+            return totalAmount;
         }
         return 0.0;
     }
@@ -122,7 +137,10 @@ public class CustomerAccount implements TransactionProcessable {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         CustomerAccount that = (CustomerAccount) object;
-        return Objects.equals(loanAccount, that.loanAccount) && Objects.equals(savingsAccount, that.savingsAccount) && Objects.equals(currentAccount, that.currentAccount) && Objects.equals(transactionsByDate, that.transactionsByDate);
+        return Objects.equals(loanAccount, that.loanAccount) &&
+                Objects.equals(savingsAccount, that.savingsAccount) &&
+                Objects.equals(currentAccount, that.currentAccount) &&
+                Objects.equals(transactionsByDate, that.transactionsByDate);
     }
 
     @Override
@@ -140,6 +158,3 @@ public class CustomerAccount implements TransactionProcessable {
                 '}';
     }
 }
-
-
-

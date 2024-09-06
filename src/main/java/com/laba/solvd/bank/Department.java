@@ -1,12 +1,15 @@
 package com.laba.solvd.bank;
 
 import com.laba.solvd.customer.Customer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class Department {
+    private static final Logger logger = LogManager.getLogger(Department.class);
     private String name;
     private String departmentlocation;
     private List<Customer> customers;
@@ -16,6 +19,7 @@ public class Department {
         this.departmentlocation=departmentlocation;
         this.customers = new ArrayList<>();
         this.name = name;
+        logger.info("Department {} has been created", name);
     }
 
     public void addCustomer(Customer customer) {
@@ -55,7 +59,8 @@ public class Department {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         Department that = (Department) object;
-        return Objects.equals(name, that.name) && Objects.equals(departmentlocation, that.departmentlocation) && Objects.equals(customers, that.customers);
+        return Objects.equals(name, that.name) && Objects.equals(
+                departmentlocation, that.departmentlocation) && Objects.equals(customers, that.customers);
     }
 
     @Override

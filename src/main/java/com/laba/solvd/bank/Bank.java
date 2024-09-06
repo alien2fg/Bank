@@ -6,12 +6,14 @@ import com.laba.solvd.customer.CustomerAccount;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Bank {
+    private static final Logger logger = LogManager.getLogger(Bank.class);
     private static final String DEFAULT_NAME;
     private String name;
     private Set<Department> departments; //avoid duplication of departments
-
 
     static {
         DEFAULT_NAME = "My Bank";
@@ -25,6 +27,7 @@ public class Bank {
     public Bank(String name) {
         this.departments = new HashSet<>();
         this.name = name;
+        logger.info("Bank {} has been created", name);
     }
 
     public void addDepartment(Department department) {
@@ -49,6 +52,7 @@ public class Bank {
                 }
             }
         }
+        logger.info("Total amount of money in the bank: {}", totalBalance);
         return totalBalance;
     }
 

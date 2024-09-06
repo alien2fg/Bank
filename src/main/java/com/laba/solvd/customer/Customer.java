@@ -1,18 +1,23 @@
 package com.laba.solvd.customer;
 
 
+import com.laba.solvd.bank.Department;
 import com.laba.solvd.customlinkedlist.CustomLinkedList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
 
 public class Customer implements CustomerInfoProvider{
+    private static final Logger logger = LogManager.getLogger(Customer.class);
     private CustomerData customerData;
     private CustomLinkedList<CustomerAccount> accounts;
-
 
     public Customer(CustomerData customerData) {
         this.customerData = customerData;
         this.accounts=new CustomLinkedList<>();
+        logger.info("Customer {} has been created",
+                customerData.getFirstName(), customerData.getLastName());
     }
 
     public void addCustomerAccount(CustomerAccount customerAccount) {
