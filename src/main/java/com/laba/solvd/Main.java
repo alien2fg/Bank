@@ -10,7 +10,12 @@ import com.laba.solvd.customer.CustomerData;
 import com.laba.solvd.exception.*;
 import com.laba.solvd.transaction.Transaction;
 import com.laba.solvd.util.FinancialUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
+
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -18,6 +23,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Main {
+    private static final File customerFile = new File("target/customers.txt");
+
     public static void main(String[] args) {
         try (Scanner scanner = new Scanner(System.in)) {
             Bank bank = new Bank("My Bank");
@@ -52,6 +59,9 @@ public class Main {
                             printTotalBalance(bank);
                             break;
                         case 5:
+                            readDataFromFile();
+                            break;
+                        case 6:
                             running = false;
                             break;
                         default:
@@ -64,13 +74,36 @@ public class Main {
         }
     }
 
+    private static void readDataFromFile() {
+        try (Scanner scanner = new Scanner(System.in)) {
+            System.out.println("Enter the path of the file to read:");
+            String filePath = scanner.nextLine();
+            File file = new File(filePath);
+
+            if (!file.exists() || !file.isFile()) {
+                throw new IOException("File does not exist or is not a file.");
+            }
+
+            try {
+                String fileContent = FileUtils.readFileToString(file, "UTF-8");
+                System.out.println("File Content:");
+                System.out.println(fileContent);
+            } catch (IOException e) {
+                System.err.println("Error reading file: " + e.getMessage());
+            }
+        } catch (IOException e) {
+            System.err.println("Error with file path: " + e.getMessage());
+        }
+    }
+
     private static void displayMenu() {
         System.out.println("\n--- Bank Menu ---");
         System.out.println("1. Add Customer");
         System.out.println("2. Add Account");
         System.out.println("3. Display Customers");
         System.out.println("4. Display total balance in the bank");
-        System.out.println("5. Exit");
+        System.out.println("5. Read data from file");
+        System.out.println("6. Exit");
         System.out.print("Enter your choice: ");
     }
 
@@ -95,9 +128,41 @@ public class Main {
             customers.add(customer);
             department.addCustomer(customer);
 
+            saveCustomerToFile(customer);
+
             System.out.println("Customer added successfully.");
         } catch (DateTimeParseException e) {
             System.out.println("Invalid date format. Please use YYYY-MM-DD.");
+        } catch (IOException e) {
+            System.err.println("Error saving customer data: " + e.getMessage());
+        }
+    }
+
+    private static void saveCustomerToFile(Customer customer) throws IOException {
+        String customerData = customer.toString();
+
+        String extractedData = StringUtils.substringBetween(customerData, "CustomerData{", "}}");
+        if (extractedData != null) {
+            extractedData = extractedData.trim();
+
+            String[] dataParts = StringUtils.split(extractedData, ',');
+            String joinedData = StringUtils.join(dataParts, ';');
+            String replacedData = StringUtils.replace(joinedData, " ", "_");
+            String centeredData = StringUtils.center(replacedData, 120, '*');
+            String reversedData = StringUtils.reverse(centeredData);
+
+
+            FileUtils.writeStringToFile(customerFile,
+                    "Extracted Data: " + extractedData + "\n" +
+                            "Joined Data: " + joinedData + "\n" +
+                            "Replaced Data: " + replacedData + "\n" +
+                            "Centered Data: " + centeredData + "\n" +
+                            "Reversed Data: " + reversedData + "\n",
+                    "UTF-8", true);
+
+            System.out.println("Customer data saved to file.");
+        } else {
+            System.out.println("CUSTOMERDATA section not found.");
         }
     }
 
