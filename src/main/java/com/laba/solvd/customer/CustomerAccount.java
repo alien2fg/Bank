@@ -2,8 +2,8 @@ package com.laba.solvd.customer;
 
 import com.laba.solvd.account.Account;
 import com.laba.solvd.account.CurrentAccount;
-import com.laba.solvd.account.LoanAccount;
-import com.laba.solvd.account.SavingsAccount;
+import com.laba.solvd.account.loanaccount.LoanAccount;
+import com.laba.solvd.account.savingsaccount.SavingsAccount;
 import com.laba.solvd.transaction.Transaction;
 import com.laba.solvd.transaction.TransactionProcessable;
 import org.apache.logging.log4j.LogManager;

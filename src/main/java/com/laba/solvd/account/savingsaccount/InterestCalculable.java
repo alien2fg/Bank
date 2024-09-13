@@ -1,4 +1,4 @@
-package com.laba.solvd.account;
+package com.laba.solvd.account.savingsaccount;
 
 public interface InterestCalculable {
     double calculateInterest();

@@ -6,9 +6,9 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 public abstract class Account implements AccountManageable {
-    protected String accountNumber;
-    protected LocalDate dateOpened;
-    protected double balance;
+    private String accountNumber;
+    private LocalDate dateOpened;
+    private double balance;
 
     public Account(String accountNumber, double balance, LocalDate dateOpened) {
         this.accountNumber = accountNumber;

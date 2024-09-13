@@ -28,6 +28,14 @@ public class CustomerAddress {
     }
 
     @Override
+    public String toString() {
+        return "CustomerAddress{" +
+                "city='" + city + '\'' +
+                ", street='" + street + '\'' +
+                '}';
+    }
+
+    @Override
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;

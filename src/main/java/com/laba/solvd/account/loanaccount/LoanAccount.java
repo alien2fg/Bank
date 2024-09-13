@@ -1,5 +1,6 @@
-package com.laba.solvd.account;
+package com.laba.solvd.account.loanaccount;
 
+import com.laba.solvd.account.Account;
 import com.laba.solvd.exception.InvalidAmountException;
 import com.laba.solvd.util.FinancialUtils;
 
@@ -12,12 +13,12 @@ public class LoanAccount extends Account implements LoanManageable{
     private LocalDate loanStartDate;
     private int loanDurationInMonths; // Duration of the loan
 
-    public LoanAccount(String accountNumber, double balance, LocalDate dateOpened, double loanAmount, double interestRate, int loanDurationInMonths, LocalDate loanStartDate) {
+    public LoanAccount(String accountNumber, double balance, LocalDate dateOpened, LoanDetails loanDetails) {
         super(accountNumber, balance, dateOpened);
-        this.loanAmount = loanAmount;
-        this.interestRate = interestRate;
-        this.loanDurationInMonths = loanDurationInMonths;
-        this.loanStartDate = loanStartDate;
+        this.loanAmount = loanDetails.getLoanAmount();
+        this.interestRate = loanDetails.getInterestRate();
+        this.loanDurationInMonths = loanDetails.getLoanDurationInMonths();
+        this.loanStartDate = loanDetails.getLoanStartDate();
     }
 
     public final double calculateMonthlyPayment() {
@@ -29,37 +30,27 @@ public class LoanAccount extends Account implements LoanManageable{
         return FinancialUtils.calculateTotalLoanCost(monthlyPayment, loanDurationInMonths);
     }
 
-    @Override
-    public void deposit(double amount) {
+    private void processDeposit(double amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Payment amount must be positive.");
+            throw new InvalidAmountException("Payment amount must be positive.");
         }
-
         loanAmount -= amount;
-
         if (loanAmount < 0) {
             loanAmount = 0;
         }
-
         setBalance(getBalance() + amount);
+    }
+
+    @Override
+    public void deposit(double amount) {
+        processDeposit(amount);
     }
 
     @Override
     public void deposit(double amount, String description) {
-        if (amount <= 0) {
-            throw new InvalidAmountException("Payment amount must be positive.");
-        }
-
-        loanAmount -= amount;
-
-        if (loanAmount < 0) {
-            loanAmount = 0;
-        }
-
-        setBalance(getBalance() + amount);
+        processDeposit(amount);
         System.out.println("Deposit description: " + description);
     }
-
 
     @Override
     public void withdraw(double amount) {

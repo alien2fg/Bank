@@ -1,5 +1,6 @@
-package com.laba.solvd.account;
+package com.laba.solvd.account.savingsaccount;
 
+import com.laba.solvd.account.Account;
 import com.laba.solvd.exception.InvalidAmountException;
 import com.laba.solvd.util.FinancialUtils;
 

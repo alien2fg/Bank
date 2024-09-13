@@ -1,6 +1,9 @@
 package com.laba.solvd;
 
 import com.laba.solvd.account.*;
+import com.laba.solvd.account.loanaccount.LoanAccount;
+import com.laba.solvd.account.loanaccount.LoanDetails;
+import com.laba.solvd.account.savingsaccount.SavingsAccount;
 import com.laba.solvd.bank.Bank;
 import com.laba.solvd.bank.Department;
 import com.laba.solvd.customer.Customer;
@@ -211,7 +214,8 @@ public class Main {
                     int duration = Integer.parseInt(scanner.nextLine());
                     System.out.println("Enter loan start date (YYYY-MM-DD):");
                     LocalDate loanStartDate = LocalDate.parse(scanner.nextLine());
-                    account = new LoanAccount(accountNumber, balance, LocalDate.now(), loanAmount, loanInterestRate, duration, loanStartDate);
+                    LoanDetails loanDetails = new LoanDetails(loanInterestRate,loanAmount,duration,loanStartDate);
+                    account = new LoanAccount(accountNumber, balance, LocalDate.now(), loanDetails);
 
                     double monthlyPayment = ((LoanAccount) account).calculateMonthlyPayment();
                     double totalCost = ((LoanAccount) account).calculateTotalLoanCost();
