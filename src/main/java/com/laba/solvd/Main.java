@@ -62,7 +62,7 @@ public class Main {
                             printTotalBalance(bank);
                             break;
                         case 5:
-                            readDataFromFile();
+                            readDataFromFile(scanner);
                             break;
                         case 6:
                             running = false;
@@ -77,25 +77,27 @@ public class Main {
         }
     }
 
-    private static void readDataFromFile() {
-        try (Scanner scanner = new Scanner(System.in)) {
-            System.out.println("Enter the path of the file to read:");
+    private static void readDataFromFile(Scanner scanner) {
+        System.out.println("Enter the path of the file to read:");
+        if (scanner.hasNextLine()) {
             String filePath = scanner.nextLine();
             File file = new File(filePath);
 
             if (!file.exists() || !file.isFile()) {
-                throw new IOException("File does not exist or is not a file.");
+                System.err.println("File does not exist or is not a file.");
+                return;
             }
 
             try {
                 String fileContent = FileUtils.readFileToString(file, "UTF-8");
                 System.out.println("File Content:");
                 System.out.println(fileContent);
+
             } catch (IOException e) {
                 System.err.println("Error reading file: " + e.getMessage());
             }
-        } catch (IOException e) {
-            System.err.println("Error with file path: " + e.getMessage());
+        } else {
+            System.out.println("No input provided for file path.");
         }
     }
 
