@@ -4,6 +4,7 @@ import com.laba.solvd.account.Account;
 import com.laba.solvd.account.CurrentAccount;
 import com.laba.solvd.account.loanaccount.LoanAccount;
 import com.laba.solvd.account.savingsaccount.SavingsAccount;
+import com.laba.solvd.enums.*;
 import com.laba.solvd.transaction.Transaction;
 import com.laba.solvd.transaction.TransactionProcessable;
 import org.apache.logging.log4j.LogManager;
@@ -11,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.*;
 
 public class CustomerAccount implements TransactionProcessable {
     private static final Logger logger = LogManager.getLogger(CustomerAccount.class);
@@ -18,12 +20,40 @@ public class CustomerAccount implements TransactionProcessable {
     private LoanAccount loanAccount;
     private SavingsAccount savingsAccount;
     private CurrentAccount currentAccount;
-    private Map<LocalDate, List<Transaction>> transactionsByDate; // Transactions are assigned appropriate dates.
+    private Map<LocalDate, List<Transaction>> transactionsByDate;
     private static int numberOfAccounts;
+    private CustomerStatus customerStatus;
+    private CurrencyType currencyType;
+    private AccountType accountType; // Nowe pole
+    private Map<Transaction, TransactionStatus> transactionStatuses; // Nowe pole
 
-    public CustomerAccount(Account account, ArrayList<Transaction> transactions) {
+    // Lambda expressions
+    Predicate<Transaction> isLargeTransaction = transaction -> transaction.getAmount() > 10000;
+    Consumer<Transaction> printTransaction = transaction -> logger.info(transaction);
+    Supplier<String> generateCustomerId = () -> UUID.randomUUID().toString();
+    Function<LocalDate, Double> getTotalTransactionAmount = date ->
+            transactionsByDate.getOrDefault(date, new ArrayList<>())
+                    .stream()
+                    .mapToDouble(Transaction::getAmount)
+                    .sum();
+    BiFunction<CurrentAccount, Double, Boolean> transferToSavings = (current, amount) -> {
+        if (current.getBalance() >= amount) {
+            current.withdraw(amount, "Transfer to Savings");
+            savingsAccount.deposit(amount, "Transfer from Current");
+            return true;
+        }
+        return false;
+    };
+
+    // Constructor
+    public CustomerAccount(Account account, ArrayList<Transaction> transactions,
+                           CurrencyType currencyType, CustomerStatus status, AccountType accountType) {
         this.transactionsByDate = new HashMap<>();
+        this.transactionStatuses = new HashMap<>();
         numberOfAccounts++;
+        this.customerStatus = status;
+        this.currencyType = currencyType;
+        this.accountType = accountType; // Ustawienie typu konta
 
         if (account instanceof LoanAccount) {
             this.loanAccount = (LoanAccount) account;
@@ -34,7 +64,7 @@ public class CustomerAccount implements TransactionProcessable {
         }
 
         for (Transaction transaction : transactions) {
-            addTransaction(transaction.getAmount(), transaction.getDescription(), transaction.getTransactionDate());
+            addTransaction(transaction.getAmount(), transaction.getDescription(), transaction.getTransactionDate(), TransactionType.DEPOSIT);
         }
 
         logger.info("Created CustomerAccount with account: {}", account);
@@ -85,51 +115,83 @@ public class CustomerAccount implements TransactionProcessable {
         logger.debug("Set transactionsByDate: {}", transactionsByDate);
     }
 
-    @Override
-    public void addTransaction(double amount, String description, LocalDate date) {
-        logger.debug("Adding transaction: amount={}, description={}, date={}", amount, description, date);
-        Transaction newTransaction = new Transaction(amount, description, date);
-        transactionsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(newTransaction);
+    public CustomerStatus getCustomerStatus() {
+        return customerStatus;
+    }
 
-        if (currentAccount != null) {
-            if (amount >= 0) {
-                currentAccount.deposit(amount, description);
-                logger.debug("Deposited {} to CurrentAccount", amount);
-            } else {
-                currentAccount.withdraw(-amount, description);
-                logger.debug("Withdrew {} from CurrentAccount", -amount);
-            }
+    public void setCustomerStatus(CustomerStatus customerStatus) {
+        this.customerStatus = customerStatus;
+    }
+
+    public CurrencyType getCurrencyType() {
+        return currencyType;
+    }
+
+    public void setCurrencyType(CurrencyType currencyType) {
+        this.currencyType = currencyType;
+    }
+
+    public AccountType getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(AccountType accountType) {
+        this.accountType = accountType;
+    }
+
+    @Override
+    public void addTransaction(double amount, String description, LocalDate date, TransactionType type) {
+        logger.debug("Adding transaction: amount={}, description={}, date={}, type={}", amount, description, date, type);
+        Transaction newTransaction = new Transaction(amount, description, TransactionStatus.PENDING, date, type);
+        transactionsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(newTransaction);
+        transactionStatuses.put(newTransaction, TransactionStatus.PENDING);
+
+        switch (type) {
+            case DEPOSIT:
+                if (currentAccount != null) {
+                    currentAccount.deposit(amount, description);
+                    logger.debug("Deposited {} to CurrentAccount", amount);
+                }
+                break;
+            case WITHDRAWAL:
+                if (currentAccount != null) {
+                    currentAccount.withdraw(amount, description);
+                    logger.debug("Withdrew {} from CurrentAccount", amount);
+                }
+                break;
+            case TRANSFER:
+                logger.info("Transfer transaction is not handled here");
+                break;
+            default:
+                logger.warn("Unknown transaction type");
         }
-        if (savingsAccount != null) {
-            if (amount >= 0) {
-                savingsAccount.deposit(amount, description);
-                logger.debug("Deposited {} to SavingsAccount", amount);
-            } else {
-                savingsAccount.withdraw(-amount, description);
-                logger.debug("Withdrew {} from SavingsAccount", -amount);
-            }
-        }
-        if (loanAccount != null) {
-            if (amount >= 0) {
-                loanAccount.deposit(amount, description);
-                logger.debug("Deposited {} to LoanAccount", amount);
-            } else {
-                logger.warn("Withdrawals are not supported for LoanAccount");
-            }
-        }
+        transactionStatuses.put(newTransaction, TransactionStatus.COMPLETED);
+        logger.debug("Transaction status updated to COMPLETED: {}", newTransaction);
     }
 
     @Override
     public double getTransactionAmount(LocalDate date) {
-        List<Transaction> transactionsOnDate = transactionsByDate.get(date);
-        if (transactionsOnDate != null) {
-            double totalAmount = transactionsOnDate.stream()
-                    .mapToDouble(Transaction::getAmount)
-                    .sum();
-            logger.debug("Total transaction amount for date {}: {}", date, totalAmount);
-            return totalAmount;
-        }
-        return 0.0;
+        return getTotalTransactionAmount.apply(date);
+    }
+
+    public boolean hasLargeTransaction() {
+        return transactionsByDate.values().stream()
+                .flatMap(List::stream)
+                .anyMatch(isLargeTransaction);
+    }
+
+    public void printAllTransactions() {
+        transactionsByDate.values().stream()
+                .flatMap(List::stream)
+                .forEach(printTransaction);
+    }
+
+    public String createNewCustomerId() {
+        return generateCustomerId.get();
+    }
+
+    public boolean transferToSavings(double amount) {
+        return transferToSavings.apply(currentAccount, amount);
     }
 
     @Override
@@ -140,12 +202,14 @@ public class CustomerAccount implements TransactionProcessable {
         return Objects.equals(loanAccount, that.loanAccount) &&
                 Objects.equals(savingsAccount, that.savingsAccount) &&
                 Objects.equals(currentAccount, that.currentAccount) &&
-                Objects.equals(transactionsByDate, that.transactionsByDate);
+                Objects.equals(transactionsByDate, that.transactionsByDate) &&
+                Objects.equals(accountType, that.accountType) &&
+                Objects.equals(transactionStatuses, that.transactionStatuses);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(loanAccount, savingsAccount, currentAccount, transactionsByDate);
+        return Objects.hash(loanAccount, savingsAccount, currentAccount, transactionsByDate, accountType, transactionStatuses);
     }
 
     @Override
@@ -155,6 +219,10 @@ public class CustomerAccount implements TransactionProcessable {
                 ", loanAccount=" + loanAccount +
                 ", savingsAccount=" + savingsAccount +
                 ", transactionsByDate=" + transactionsByDate +
+                ", customerStatus=" + customerStatus +
+                ", currencyType=" + currencyType +
+                ", accountType=" + accountType +
+                ", transactionStatuses=" + transactionStatuses +
                 '}';
     }
 }

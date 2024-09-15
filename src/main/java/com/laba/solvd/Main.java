@@ -10,6 +10,7 @@ import com.laba.solvd.customer.Customer;
 import com.laba.solvd.customer.CustomerAccount;
 import com.laba.solvd.customer.CustomerAddress;
 import com.laba.solvd.customer.CustomerData;
+import com.laba.solvd.enums.*;
 import com.laba.solvd.exception.*;
 import com.laba.solvd.transaction.Transaction;
 import com.laba.solvd.util.FinancialUtils;
@@ -192,14 +193,16 @@ public class Main {
                 throw new InvalidAccountTypeException("Invalid account type.");
             }
 
+            AccountType selectedAccountType = AccountType.values()[accountType - 1];
+
             System.out.println("Enter account number:");
             String accountNumber = scanner.nextLine();
             System.out.println("Enter initial balance:");
             double balance = Double.parseDouble(scanner.nextLine());
 
             Account account = null;
-            switch (accountType) {
-                case 1:
+            switch (selectedAccountType) {
+                case SAVINGS:
                     System.out.println("Enter interest rate (as a percentage):");
                     double interestRate = Double.parseDouble(scanner.nextLine());
                     account = new SavingsAccount(accountNumber, balance, LocalDate.now(), interestRate);
@@ -207,7 +210,7 @@ public class Main {
                     double futureValue = ((SavingsAccount) account).getFutureValue(5); // Example for 5 years
                     System.out.println("Predicted future value after 5 years: " + FinancialUtils.roundToTwoDecimalPlaces(futureValue));
                     break;
-                case 2:
+                case LOAN:
                     System.out.println("Enter loan amount:");
                     double loanAmount = Double.parseDouble(scanner.nextLine());
                     System.out.println("Enter interest rate (as a percentage):");
@@ -216,7 +219,7 @@ public class Main {
                     int duration = Integer.parseInt(scanner.nextLine());
                     System.out.println("Enter loan start date (YYYY-MM-DD):");
                     LocalDate loanStartDate = LocalDate.parse(scanner.nextLine());
-                    LoanDetails loanDetails = new LoanDetails(loanInterestRate,loanAmount,duration,loanStartDate);
+                    LoanDetails loanDetails = new LoanDetails(loanInterestRate, loanAmount, duration, loanStartDate);
                     account = new LoanAccount(accountNumber, balance, LocalDate.now(), loanDetails);
 
                     double monthlyPayment = ((LoanAccount) account).calculateMonthlyPayment();
@@ -224,13 +227,11 @@ public class Main {
                     System.out.println("Calculated monthly payment for loan account: " + FinancialUtils.roundToTwoDecimalPlaces(monthlyPayment));
                     System.out.println("Total cost of the loan: " + FinancialUtils.roundToTwoDecimalPlaces(totalCost));
                     break;
-                case 3:
+                case CURRENT:
                     System.out.println("Enter overdraft limit:");
                     double overdraftLimit = Double.parseDouble(scanner.nextLine());
                     account = new CurrentAccount(accountNumber, balance, LocalDate.now(), overdraftLimit);
                     break;
-                default:
-                    throw new InvalidAccountTypeException("Invalid account type.");
             }
 
             System.out.println("Enter transaction description:");
@@ -240,9 +241,11 @@ public class Main {
             if (transactionAmount <= 0) {
                 throw new InvalidAmountException("Transaction amount must be positive.");
             }
-            Transaction transaction = new Transaction(transactionAmount, description, LocalDate.now());
+            TransactionStatus status = TransactionStatus.PENDING;
+            Transaction transaction = new Transaction(transactionAmount, description, status, LocalDate.now(), TransactionType.DEPOSIT);
 
-            CustomerAccount customerAccount = new CustomerAccount(account, new ArrayList<>(List.of(transaction)));
+
+            CustomerAccount customerAccount = new CustomerAccount(account, new ArrayList<>(List.of(transaction)), CurrencyType.EUR, CustomerStatus.ACTIVE, selectedAccountType);
             customer.addCustomerAccount(customerAccount);
 
             System.out.println("Account added successfully.");
