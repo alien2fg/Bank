@@ -1,5 +1,8 @@
 package com.laba.solvd.enums;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 public enum TransactionType {
     DEPOSIT("Deposit to account"),
     WITHDRAWAL("Withdrawal from account"),
@@ -15,12 +18,9 @@ public enum TransactionType {
         return description;
     }
 
-   public  static TransactionType fromString(String type){
-        for (TransactionType t : TransactionType.values()){
-            if (t.name().equalsIgnoreCase(type)){
-                return t;
-            }
-        }
-        return null;
-   }
+    public static Optional<TransactionType> fromString(String type) {
+        return Arrays.stream(TransactionType.values())
+                .filter(t -> t.name().equalsIgnoreCase(type))
+                .findFirst();
+    }
 }

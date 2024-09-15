@@ -24,8 +24,8 @@ public class CustomerAccount implements TransactionProcessable {
     private static int numberOfAccounts;
     private CustomerStatus customerStatus;
     private CurrencyType currencyType;
-    private AccountType accountType; // Nowe pole
-    private Map<Transaction, TransactionStatus> transactionStatuses; // Nowe pole
+    private AccountType accountType;
+    private Map<Transaction, TransactionStatus> transactionStatuses;
 
     // Lambda expressions
     Predicate<Transaction> isLargeTransaction = transaction -> transaction.getAmount() > 10000;
@@ -53,7 +53,7 @@ public class CustomerAccount implements TransactionProcessable {
         numberOfAccounts++;
         this.customerStatus = status;
         this.currencyType = currencyType;
-        this.accountType = accountType; // Ustawienie typu konta
+        this.accountType = accountType;
 
         if (account instanceof LoanAccount) {
             this.loanAccount = (LoanAccount) account;
@@ -63,9 +63,13 @@ public class CustomerAccount implements TransactionProcessable {
             this.currentAccount = (CurrentAccount) account;
         }
 
-        for (Transaction transaction : transactions) {
-            addTransaction(transaction.getAmount(), transaction.getDescription(), transaction.getTransactionDate(), TransactionType.DEPOSIT);
-        }
+        transactions.stream() // Create a stream from the transactions list
+                .forEach(transaction -> addTransaction(
+                        transaction.getAmount(),
+                        transaction.getDescription(),
+                        transaction.getTransactionDate(),
+                        TransactionType.DEPOSIT
+                ));
 
         logger.info("Created CustomerAccount with account: {}", account);
     }

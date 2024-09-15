@@ -35,23 +35,24 @@ public class Bank {
     }
 
     public double calculateTotalBankBalance() {
-        double totalBalance = 0.0;
+        double totalBalance = departments.stream() // Stream over departments
+                .flatMap(department -> department.getCustomers().stream()) // Flatten the customers stream
+                .flatMap(customer -> customer.getAccounts().stream()) // Flatten the accounts stream
+                .mapToDouble(account -> { // Map each account to its balance
+                    double balance = 0.0;
+                    if (account.getCurrentAccount() != null) {
+                        balance += account.getCurrentAccount().getBalance();
+                    }
+                    if (account.getSavingsAccount() != null) {
+                        balance += account.getSavingsAccount().getBalance();
+                    }
+                    if (account.getLoanAccount() != null) {
+                        balance += account.getLoanAccount().getBalance();
+                    }
+                    return balance;
+                })
+                .sum(); // Sum all balances
 
-        for (Department department : departments) {
-            for (Customer customer : department.getCustomers()) {
-                for (CustomerAccount customerAccount : customer.getAccounts()) {
-                    if (customerAccount.getCurrentAccount() != null) {
-                        totalBalance += customerAccount.getCurrentAccount().getBalance();
-                    }
-                    if (customerAccount.getSavingsAccount() != null) {
-                        totalBalance += customerAccount.getSavingsAccount().getBalance();
-                    }
-                    if (customerAccount.getLoanAccount() != null) {
-                        totalBalance += customerAccount.getLoanAccount().getBalance();
-                    }
-                }
-            }
-        }
         logger.info("Total amount of money in the bank: {}", totalBalance);
         return totalBalance;
     }
