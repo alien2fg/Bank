@@ -186,7 +186,7 @@ public class Main {
 
             Customer customer = department.getCustomers().get(customerIndex);
 
-            System.out.println("Choose account type (1: Savings, 2: Loan, 3: Current):");
+            System.out.println("Choose account type (1: Current, 2: Savings, 3: Loan):");
             int accountType = Integer.parseInt(scanner.nextLine());
 
             if (accountType < 1 || accountType > 3) {
