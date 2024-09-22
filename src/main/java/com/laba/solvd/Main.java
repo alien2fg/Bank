@@ -20,9 +20,13 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -66,6 +70,9 @@ public class Main {
                             readDataFromFile(scanner);
                             break;
                         case 6:
+                            useReflection();
+                            break;
+                        case 7:
                             running = false;
                             break;
                         default:
@@ -75,6 +82,49 @@ public class Main {
                     System.out.println("Invalid input format. Please enter numeric values where appropriate.");
                 }
             }
+        }
+    }
+
+    private static void useReflection() {
+        try{
+            // Get the class for Customer
+            Class<?> customerClass = Class.forName("com.laba.solvd.customer.Customer");
+
+            // Extract and print field information
+            System.out.println("Fields");
+            for (var field: customerClass.getDeclaredFields()){
+                System.out.println("Name: " + field.getName() + ", Type: " + field.getType() + ", Modifiers: " + field.getModifiers());
+            }
+
+            // Extract and print constructor information
+            System.out.println("\nConstructors:");
+            for (var constructor : customerClass.getDeclaredConstructors()) {
+                System.out.println("Constructor: " + constructor + ", Parameter Types: " + Arrays.toString(constructor.getParameterTypes()));
+            }
+
+            // Extract and print method information
+            System.out.println("\nMethods:");
+            for (var method : customerClass.getDeclaredMethods()) {
+                System.out.println("Method: " + method.getName() + ", Return Type: " + method.getReturnType() + ", Parameter Types: " + Arrays.toString(method.getParameterTypes()));
+            }
+
+            // Create an instance of Customer using reflection
+            Constructor<?> constructor = customerClass.getConstructor(CustomerData.class);
+            CustomerData customerData= new CustomerData(new CustomerAddress("123 Main St", "City"), LocalDate.of(1990, 1, 1), "John", "Doe");
+            Customer customer= (Customer) constructor.newInstance(customerData);
+
+            // Call a method on the created instance
+            Method method =customerClass.getMethod("getFullName");
+            String fullName=(String) method.invoke(customer);
+            System.out.println("Full Name of the Customer: " + fullName);
+
+
+        } catch (ClassNotFoundException e) {
+            System.err.println("Class not found: " + e.getMessage());
+        } catch (NoSuchMethodException e) {
+            System.err.println("Method not found: " + e.getMessage());
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            System.err.println("Error creating instance or invoking method: " + e.getMessage());
         }
     }
 
@@ -109,7 +159,8 @@ public class Main {
         System.out.println("3. Display Customers");
         System.out.println("4. Display total balance in the bank");
         System.out.println("5. Read data from file");
-        System.out.println("6. Exit");
+        System.out.println("6. Use Reflection to Inspect Customer Class");
+        System.out.println("7. Exit");
         System.out.print("Enter your choice: ");
     }
 

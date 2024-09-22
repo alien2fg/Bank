@@ -39,17 +39,17 @@ public class Bank {
                 .flatMap(department -> department.getCustomers().stream()) // Flatten the customers stream
                 .flatMap(customer -> customer.getAccounts().stream()) // Flatten the accounts stream
                 .mapToDouble(account -> { // Map each account to its balance
-                    double balance = 0.0;
-                    if (account.getCurrentAccount() != null) {
-                        balance += account.getCurrentAccount().getBalance();
-                    }
-                    if (account.getSavingsAccount() != null) {
-                        balance += account.getSavingsAccount().getBalance();
-                    }
-                    if (account.getLoanAccount() != null) {
-                        balance += account.getLoanAccount().getBalance();
-                    }
-                    return balance;
+
+                    return account.getCurrentAccount()
+                                    .map(currentAccount -> currentAccount.getBalance())
+                                    .orElse(0.0)+
+                            account.getSavingsAccount()
+                                    .map(savingsAccount -> savingsAccount.getBalance())
+                                    .orElse(0.0)+
+                            account.getLoanAccount()
+                                    .map(loanAccount -> loanAccount.getBalance())
+                                    .orElse(0.0);
+
                 })
                 .sum(); // Sum all balances
 

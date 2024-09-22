@@ -55,13 +55,7 @@ public class CustomerAccount implements TransactionProcessable {
         this.currencyType = currencyType;
         this.accountType = accountType;
 
-        if (account instanceof LoanAccount) {
-            this.loanAccount = (LoanAccount) account;
-        } else if (account instanceof SavingsAccount) {
-            this.savingsAccount = (SavingsAccount) account;
-        } else if (account instanceof CurrentAccount) {
-            this.currentAccount = (CurrentAccount) account;
-        }
+        assignAccout(account);
 
         transactions.stream() // Create a stream from the transactions list
                 .forEach(transaction -> addTransaction(
@@ -74,8 +68,18 @@ public class CustomerAccount implements TransactionProcessable {
         logger.info("Created CustomerAccount with account: {}", account);
     }
 
-    public LoanAccount getLoanAccount() {
-        return loanAccount;
+    private void assignAccout(Account account) {
+        if (account instanceof LoanAccount) {
+            this.loanAccount = (LoanAccount) account;
+        } else if (account instanceof SavingsAccount) {
+            this.savingsAccount = (SavingsAccount) account;
+        } else if (account instanceof CurrentAccount) {
+            this.currentAccount = (CurrentAccount) account;
+        }
+    }
+
+    public Optional <LoanAccount> getLoanAccount() {
+        return Optional.ofNullable(loanAccount);
     }
 
     public void setLoanAccount(LoanAccount loanAccount) {
@@ -83,8 +87,8 @@ public class CustomerAccount implements TransactionProcessable {
         logger.debug("Set LoanAccount: {}", loanAccount);
     }
 
-    public SavingsAccount getSavingsAccount() {
-        return savingsAccount;
+    public Optional<SavingsAccount> getSavingsAccount() {
+        return Optional.ofNullable(savingsAccount);
     }
 
     public void setSavingsAccount(SavingsAccount savingsAccount) {
@@ -92,8 +96,8 @@ public class CustomerAccount implements TransactionProcessable {
         logger.debug("Set SavingsAccount: {}", savingsAccount);
     }
 
-    public CurrentAccount getCurrentAccount() {
-        return currentAccount;
+    public Optional<CurrentAccount> getCurrentAccount() {
+        return Optional.ofNullable(currentAccount);
     }
 
     public void setCurrentAccount(CurrentAccount currentAccount) {
@@ -145,11 +149,14 @@ public class CustomerAccount implements TransactionProcessable {
 
     @Override
     public void addTransaction(double amount, String description, LocalDate date, TransactionType type) {
-        logger.debug("Adding transaction: amount={}, description={}, date={}, type={}", amount, description, date, type);
-        Transaction newTransaction = new Transaction(amount, description, TransactionStatus.PENDING, date, type);
-        transactionsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(newTransaction);
-        transactionStatuses.put(newTransaction, TransactionStatus.PENDING);
+        Transaction newTransaction = getNewTransaction(amount, description, date, type);
+        addTransactionToMap(date, newTransaction);
+        updateTransactionStatus(newTransaction, TransactionStatus.PENDING);
+        processTransaction(amount, description, type);
+        updateTransactionStatus(newTransaction, TransactionStatus.COMPLETED);
+    }
 
+    private void processTransaction(double amount, String description, TransactionType type) {
         switch (type) {
             case DEPOSIT:
                 if (currentAccount != null) {
@@ -169,8 +176,20 @@ public class CustomerAccount implements TransactionProcessable {
             default:
                 logger.warn("Unknown transaction type");
         }
-        transactionStatuses.put(newTransaction, TransactionStatus.COMPLETED);
-        logger.debug("Transaction status updated to COMPLETED: {}", newTransaction);
+    }
+
+    private void updateTransactionStatus(Transaction transaction, TransactionStatus status) {
+        transactionStatuses.put(transaction, status);
+        logger.debug("Transaction status updated to {}: {}", status, transaction);
+    }
+
+    private void addTransactionToMap(LocalDate date, Transaction newTransaction) {
+        transactionsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(newTransaction);
+    }
+
+    private static Transaction getNewTransaction(double amount, String description, LocalDate date, TransactionType type) {
+        logger.debug("Adding transaction: amount={}, description={}, date={}, type={}", amount, description, date, type);
+        return new Transaction(amount, description, TransactionStatus.PENDING, date, type);
     }
 
     @Override
