@@ -12,6 +12,8 @@ import com.laba.solvd.customer.CustomerAddress;
 import com.laba.solvd.customer.CustomerData;
 import com.laba.solvd.enums.*;
 import com.laba.solvd.exception.*;
+import com.laba.solvd.pool.FileConnection;
+import com.laba.solvd.pool.FileConnectionPool;
 import com.laba.solvd.transaction.Transaction;
 import com.laba.solvd.util.FinancialUtils;
 import org.apache.commons.io.FileUtils;
@@ -29,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.*;
 
 public class Main {
     private static final File customerFile = new File("target/customers.txt");
@@ -47,6 +50,8 @@ public class Main {
             System.out.println("Bank: " + bank.getName());
             System.out.println("Department: " + department.getName());
             bank.addDepartment(department);
+
+            initializeFileConnectionPool(5);
 
             boolean running = true;
             while (running) {
@@ -70,9 +75,12 @@ public class Main {
                             readDataFromFile(scanner);
                             break;
                         case 6:
-                            useReflection();
+                            loadFileWithThreads();  
                             break;
                         case 7:
+                            useReflection();
+                            break;
+                        case 8:
                             running = false;
                             break;
                         default:
@@ -82,6 +90,40 @@ public class Main {
                     System.out.println("Invalid input format. Please enter numeric values where appropriate.");
                 }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void initializeFileConnectionPool(int size) throws IOException {
+        FileConnectionPool.getInstance(size, customerFile.getPath());
+    }
+
+    private static void loadFileWithThreads() {
+        ExecutorService threadPool= Executors.newFixedThreadPool(7);
+        for (int i = 0; i < 7; i++) {
+            CompletableFuture.runAsync(()->{
+                try {
+                    System.out.println(Thread.currentThread().getName()+" is requesting a connection...");
+                    FileConnectionPool pool = FileConnectionPool.getInstance(5, customerFile.getPath());
+                    FileConnection connection = pool.getConnection();
+                    System.out.println(Thread.currentThread().getName()+ " acquired a connection: "
+                            + connection.getFileName());
+                    connection.proccessFile();
+                    Thread.sleep(2000);
+                    pool.releasedConnection(connection);
+                    System.out.println(Thread.currentThread().getName() + " released a connection.");
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                    },threadPool
+            );
+        }
+        threadPool.shutdown();
+        try {
+            threadPool.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e){
+            e.printStackTrace();
         }
     }
 
@@ -159,8 +201,9 @@ public class Main {
         System.out.println("3. Display Customers");
         System.out.println("4. Display total balance in the bank");
         System.out.println("5. Read data from file");
-        System.out.println("6. Use Reflection to Inspect Customer Class");
-        System.out.println("7. Exit");
+        System.out.println("6. Read data from file with threads");
+        System.out.println("7. Use Reflection to Inspect Customer Class");
+        System.out.println("8. Exit");
         System.out.print("Enter your choice: ");
     }
 
